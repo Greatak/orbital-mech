@@ -3,10 +3,22 @@
 <HEAD>
     <meta charset=utf-8>
     <title>Orbital Mechanics Simulator</title>
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans" rel="stylesheet">
     <link rel=stylesheet href=main.css>
 </HEAD>
 <BODY>
-    <div class='main-container'></div>
+    <div class='main-container'></div> 
+    <form class='settings'>
+        <p>
+        <label>Acceleration</label>
+        <input id=acceleration type=range min=0 max=10 step=0.01 value=0>
+        <span><input id=accelerationVal type=number min=0 max=10 step=0.01 value=0>G</span>
+        </p><p>
+        <label>Time Spent Accelerating</label>
+        <input id=timeAccelerating type=range min=0 max=100 value=0>
+        <span><input id=timeAcceleratingVal type=number min=0 max=100 value=0>%</span>
+        </p>
+    </form>
     <script src="app.js"></script>
 </BODY>
 </HTML>

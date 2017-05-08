@@ -4,7 +4,8 @@ var System = (function(win,doc,undefined){
         height = 0,
         planetLock = 1,
         canvas = $('<canvas#main-canvas>'),
-        ctx = canvas.getContext('2d');
+        ctx = canvas.getContext('2d'),
+        parameters = {};
 
     var tester = $('<p#test>');
     doc.body.appendChild(tester);
@@ -27,7 +28,7 @@ var System = (function(win,doc,undefined){
         c.clearRect(0,0,width,height);
         c.save();
         c.translate(width/2,height/2);
-        tester.textContent = 'a:' + (bodies[planetLock].anomaly/pi).toFixed(2) + ' ta:' + (bodies[planetLock].trueAnomaly/pi).toFixed(2) + ' ea:' + (trueToEcc(bodies[planetLock].eccentricity,bodies[planetLock].trueAnomaly)).toFixed(2)
+        tester.textContent = 'a:' + (bodies[planetLock].anomaly/pi).toFixed(2) + ' ta:' + (bodies[planetLock].trueAnomaly/pi).toFixed(2);
         if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
         bodies.forEach(function(i){ i.draw(c); });
         c.restore();
@@ -41,6 +42,7 @@ var System = (function(win,doc,undefined){
         }
         this.x = 0;                         //where now?
         this.y = 0;                         //in the y direction!
+        this.r = 0;                         //polar coord
         this.size = 0;                      //how big to draw
         this.color = '#4d8';                //what color to draw
         this.mass = 0;                      //for period stuff
@@ -52,6 +54,7 @@ var System = (function(win,doc,undefined){
         this.yaw = 0;                       //rotating the ellipse
         this.anomaly = 0;                   //where is it in radians along the ellipse? will update
         this.minorAxis = 0;                 //calculated
+        this.latus = 0;                     //calculated
         this.linearEccentricity = 0;        //calculated
         this.drawArc = true;                //should it show an orbit arc?
         this.drawMajor = 0;                 //the displayed ellipse parameter, normalized
@@ -77,9 +80,11 @@ var System = (function(win,doc,undefined){
             this.drawMinor = Math.sqrt(1-(this.eccentricity*this.eccentricity))*this.drawMajor;
             this.anomaly -= bodies[1].anomaly;
             bodies[1].anomaly = 0; 
+            this.latus = (this.drawMinor*this.drawMinor)/this.drawMajor
             //this is purely a display property despite fancy name
             this.linearEccentricity = -1* Math.sqrt((this.drawMajor*this.drawMajor)-(this.drawMinor*this.drawMinor));
             bodies[1].linearEccentricity = -1* Math.sqrt((bodies[1].drawMajor*bodies[1].drawMajor)-(bodies[1].drawMinor*bodies[1].drawMinor));
+            bodies[1].latus = (bodies[1].drawMinor*bodies[1].drawMinor)/bodies[1].drawMajor;
         }
 
         bodies.push(this);
@@ -88,22 +93,24 @@ var System = (function(win,doc,undefined){
         this.anomaly += this.period * dt;
         this.anomaly = this.anomaly%(2*pi);
         this.trueAnomaly = meanToTrue(this.eccentricity,this.anomaly);
-        var u = Math.tan(this.trueAnomaly/2);
-        this.x = this.drawMajor * (1-(u*u))/((u*u)+1);
-        this.y = (2 * this.drawMinor * u)/((u*u)+1);
+        this.r = this.latus / (1 + (this.eccentricity*Math.cos(this.trueAnomaly)));
+        this.x = this.r * Math.cos(this.trueAnomaly);
+        this.y = this.r * Math.sin(this.trueAnomaly);
     }
     Body.prototype.update = updateBody;
     //playing with reference frame to make math easier
     function drawBody(c){
         c.save();
         c.rotate(this.yaw);
-        c.translate(this.linearEccentricity,0)
         if(this.drawArc){
+            c.save();
+            c.translate(this.linearEccentricity,0)
             c.strokeStyle = '#fff';
             c.strokeWidth = 2;
             c.beginPath();
             c.ellipse(0,0,this.drawMajor,this.drawMinor,0,0,2*pi,false);
             c.stroke();
+            c.restore();
         }
         c.translate(this.x,this.y);
         c.fillStyle = this.color;
@@ -129,6 +136,21 @@ var System = (function(win,doc,undefined){
         requestAnimationFrame(loop);
     }
     win.addEventListener('load',init);
+
+    function handleInput(e){
+        var id = e.target.id,
+            ex = id;
+        if(id.endsWith('Val')){
+            id = id.substring(0,id.length-3);
+            ex = id;
+        }
+        else{ id += 'Val'; }
+        $('#'+id)[0].value = e.target.value;
+        parameters[ex] = e.target.value;
+    }
+    $('input').forEach(function(d){
+        d.addEventListener('input',handleInput);
+    });
 
     function meanToTrue(ecc, anom){
         var a = anom%(2*pi);
@@ -156,12 +178,6 @@ var System = (function(win,doc,undefined){
         var sinf = Math.sin(t)*Math.sqrt(1 - (ecc*ecc))/(1 - (ecc * Math.cos(t)));
         var cosf = (Math.cos(t) - ecc)/(1 - (ecc * Math.cos(t)));
         return Math.atan2(sinf,cosf);
-    }
-    function trueToEcc(ecc,anom){
-        return Math.atan2(
-            Math.sin(anom)*Math.sqrt(1 - (ecc*ecc)))/(1 + (ecc * Math.cos(anom))), 
-            (ecc + Math.cos(anom))/(1 + (ecc * Math.cos(anom))
-        );
     }
 
     return bodies;

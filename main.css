@@ -1,13 +1,41 @@
 body {
     background: #444;
+    color: #fff;
+    font-family: 'Open Sans',sans-serif;
+    font-size: 20px;
     margin: 0;
     overflow: hidden;
 }
 
 #test {
-    color: #fff;
-    font-size: 20px;
     margin: 0;
     position: absolute;
     top: 0;
+}
+
+.main-container {
+    display: inline-block;
+}
+.settings {
+    position: absolute;
+    right: 0;
+    top: 0;
+    width: calc(100vw - 155vh);
+}
+label {
+    display: block;
+}
+input[type=range] {
+    display: inline-block;
+    width: 80%;
+}
+input[type=number] {
+    background: none;
+    border: none;
+    border-bottom: solid 3px #888;
+    color: #fff;
+    font-size: 20px;
+    display: inline-block;
+    text-align: right;
+    width: 10%;
 }

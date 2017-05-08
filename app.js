@@ -2,15 +2,20 @@ var System = (function(win,doc,undefined){
     var pi = Math.PI,
         width = 0,
         height = 0,
+        planetLock = 1,
         canvas = $('<canvas#main-canvas>'),
         ctx = canvas.getContext('2d');
 
+    var tester = $('<p#test>');
+    doc.body.appendChild(tester);
+    tester.textContent = "test";
+
     //basic loop stuff, don't plan on getting too fancy with frameskipping or anything
     var dt = 0,
-        oldTime = Date.now();
+        oldTime = 0;
     function loop(time){
         requestAnimationFrame(loop);
-        dt = (time - oldTime)/1000;
+        dt = (oldTime-time)/1000;
         oldTime = time;
 
         bodies.forEach(function(i){ i.update(dt); });
@@ -22,6 +27,8 @@ var System = (function(win,doc,undefined){
         c.clearRect(0,0,width,height);
         c.save();
         c.translate(width/2,height/2);
+        tester.textContent = 'a:' + (bodies[planetLock].anomaly/pi).toFixed(2) + ' ta:' + (bodies[planetLock].trueAnomaly/pi).toFixed(2) + ' ea:' + (trueToEcc(bodies[planetLock].eccentricity,bodies[planetLock].trueAnomaly)).toFixed(2)
+        if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
         bodies.forEach(function(i){ i.draw(c); });
         c.restore();
     }
@@ -68,14 +75,18 @@ var System = (function(win,doc,undefined){
             bodies[1].drawMajor = this.drawMajor * (bodies[1].majorAxis/this.majorAxis);
             bodies[1].drawMinor = Math.sqrt(1-(bodies[1].eccentricity*bodies[1].eccentricity))*bodies[1].drawMajor;
             this.drawMinor = Math.sqrt(1-(this.eccentricity*this.eccentricity))*this.drawMajor;
+            this.anomaly -= bodies[1].anomaly;
+            bodies[1].anomaly = 0; 
+            //this is purely a display property despite fancy name
+            this.linearEccentricity = -1* Math.sqrt((this.drawMajor*this.drawMajor)-(this.drawMinor*this.drawMinor));
+            bodies[1].linearEccentricity = -1* Math.sqrt((bodies[1].drawMajor*bodies[1].drawMajor)-(bodies[1].drawMinor*bodies[1].drawMinor));
         }
-        //this is purely a display property despite fancy name
-        this.linearEccentricity = -1* Math.sqrt((this.drawMajor*this.drawMajor)-(this.drawMinor*this.drawMinor));
 
         bodies.push(this);
     }
     function updateBody(dt){
         this.anomaly += this.period * dt;
+        this.anomaly = this.anomaly%(2*pi);
         this.trueAnomaly = meanToTrue(this.eccentricity,this.anomaly);
         var u = Math.tan(this.trueAnomaly/2);
         this.x = this.drawMajor * (1-(u*u))/((u*u)+1);
@@ -104,7 +115,7 @@ var System = (function(win,doc,undefined){
     Body.prototype.draw = drawBody;
 
     function init(){
-        width = win.innerWidth;
+        width = win.innerHeight*1.5;
         height = win.innerHeight;
         canvas.width = width;
         canvas.height = height;
@@ -120,31 +131,37 @@ var System = (function(win,doc,undefined){
     win.addEventListener('load',init);
 
     function meanToTrue(ecc, anom){
-        anom = anom%(2*pi);
-        if(anom < pi){
-            anom += 2*pi;
-        }else if(anom > pi){
-            anom -= 2*pi
+        var a = anom%(2*pi);
+        if(a < pi){
+            a += 2*pi;
+        }else if(a > pi){
+            a -= 2*pi
         }
         var t = 0;
-        if((anom > -pi && anom < 0) || anom > pi){
-            t = anom - ecc;
+        if((a > -pi && a < 0) || a > pi){
+            t = a - ecc;
         }else{
-            t = anom + ecc;
+            t = a + ecc;
         }
 
-        var t1 = anom;
+        var t1 = a;
         var first = true;
         while (first || Math.abs(t1 - t) > 1e-6){
             first = 0;
             t = t1;
-            t1 = t + (anom - t + (ecc*Math.sin(t)))/(1 - (ecc*Math.cos(t)));
+            t1 = t + (a - t + (ecc*Math.sin(t)))/(1 - (ecc*Math.cos(t)));
         }   
         t = t1;
 
         var sinf = Math.sin(t)*Math.sqrt(1 - (ecc*ecc))/(1 - (ecc * Math.cos(t)));
         var cosf = (Math.cos(t) - ecc)/(1 - (ecc * Math.cos(t)));
         return Math.atan2(sinf,cosf);
+    }
+    function trueToEcc(ecc,anom){
+        return Math.atan2(
+            Math.sin(anom)*Math.sqrt(1 - (ecc*ecc)))/(1 + (ecc * Math.cos(anom))), 
+            (ecc + Math.cos(anom))/(1 + (ecc * Math.cos(anom))
+        );
     }
 
     return bodies;

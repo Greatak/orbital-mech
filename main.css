@@ -17,17 +17,48 @@ body {
     display: inline-block;
 }
 .settings {
+    height: 100vh;
+    overflow-x: hidden;
     position: absolute;
     right: 0;
     top: 0;
     width: calc(100vw - 155vh);
+}
+input[name=settings-toggle] {
+    display: none;
+}
+.toggle-box { margin: 0; }
+.toggle-box > label{
+    border-bottom: solid 3px #888;
+    box-sizing: border-box;
+    display:inline-block;
+    line-height: 2;
+    text-align: center;
+    width: 50%;
+}
+.toggle-box > label:first-of-type { border: none; }
+.toggle-box > input:checked ~ label { border: none; }
+.toggle-box > input:checked + label { border-bottom: solid 3px #888; }
+.settings-box {
+    transition: margin 0.5s;
+    width: 200%;
+}
+input[name=settings-toggle]:checked + .settings-box {
+    margin-left: -100%;
+}
+.settings-box > form {
+    box-sizing: border-box;
+    display:inline-block;
+    height: 100%;
+    vertical-align: top;
+    width: 50%;
 }
 label {
     display: block;
 }
 input[type=range] {
     display: inline-block;
-    width: 80%;
+    width: calc(100% - 8em);
 }
 input[type=number] {
     background: none;
@@ -37,5 +68,12 @@ input[type=number] {
     font-size: 20px;
     display: inline-block;
     text-align: right;
-    width: 10%;
+    width: 3em;
+}
+.inline label {
+    display: inline-block;
+    margin-right: 1em;
+}
+.inline input {
+    display: inline-block;
 }

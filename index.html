@@ -7,18 +7,94 @@
     <link rel=stylesheet href=main.css>
 </HEAD>
 <BODY>
-    <div class='main-container'></div> 
-    <form class='settings'>
-        <p>
-        <label>Acceleration</label>
-        <input id=acceleration type=range min=0 max=10 step=0.01 value=0>
-        <span><input id=accelerationVal type=number min=0 max=10 step=0.01 value=0>G</span>
-        </p><p>
-        <label>Time Spent Accelerating</label>
-        <input id=timeAccelerating type=range min=0 max=100 value=0>
-        <span><input id=timeAcceleratingVal type=number min=0 max=100 value=0>%</span>
+    <div class='main-container'></div>
+    <div class='settings'> 
+        <p class=toggle-box>
+            <input id=system-settings type=radio name=settings-toggle checked>
+            <label for=system-settings>System
+            </label><label for=transfer-settings>Transfer</label>
         </p>
-    </form>
+        <input id=transfer-settings type=radio name=settings-toggle>
+        <div class=settings-box>
+            <form class='system'>
+                <p class='inline'>
+                    <label>Star Mass:</label>
+                    <span><input id=starMass type=number min=0.07 max=150 value=1>M<sub>Sun</sub></span>
+                </p>
+                <p>Starting from</p>
+                <p class='inline'>
+                    <label>Mass:</label>
+                    <span><input id=AMass type=number min=0 max=1000 value=1>M<sub>Earth</sub></span>
+                </p>
+                <p class='inline'>
+                    <label>Semi-Major Axis:</label>
+                    <span><input id=AAxis type=number min=0 max=150 value=1>AU</span>
+                </p>
+                <p>
+                    <label>Eccentricity</label>
+                    <input id=AEccentricity type=range min=0 max=1 step=0.001 value=0.017>
+                    <input id=AEccentricityVal type=number min=0 max=1 step=0.001 value=0.017>
+                </p>
+                <p>
+                    <label>Inclination</label>
+                    <input id=AInclination type=range min=0 max=180 step=0.1 value=0>
+                    <span><input id=AInclinationVal type=number min=0 max=180 value=0>°</span>
+                </p>
+                <p>
+                    <label>Yaw</label>
+                    <input id=AYaw type=range min=-360 max=360 step=0.1 value=-11.26>
+                    <span><input id=AYawVal type=number min=-360 max=360 value=-11.26>°</span>
+                </p>
+                <p>
+                    <label>Mean Anomaly</label>
+                    <input id=AAnomaly type=range min=-360 max=360 step=0.01 value=358.62>
+                    <span><input id=AAnomalyVal type=number min=-360 max=360 value=358.62>°</span>
+                </p>
+                <p>Going to</p>
+                <p class='inline'>
+                    <label>Mass:</label>
+                    <span><input id=BMass type=number min=0 max=1000 value=0.107>M<sub>Earth</sub></span>
+                </p>
+                <p class='inline'>
+                    <label>Semi-Major Axis:</label>
+                    <span><input id=BAxis type=number min=0 max=150 value=1.52>AU</span>
+                </p>
+                <p>
+                    <label>Eccentricity</label>
+                    <input id=BEccentricity type=range min=0 max=1 step=0.001 value=0.09>
+                    <input id=BEccentricityVal type=number min=0 max=1 step=0.001 value=0.09>
+                </p>
+                <p>
+                    <label>Inclination</label>
+                    <input id=BInclination type=range min=0 max=180 step=0.1 value=0>
+                    <span><input id=BInclinationVal type=number min=0 max=180 value=0>°</span>
+                </p>
+                <p>
+                    <label>Yaw</label>
+                    <input id=BYaw type=range min=-360 max=360 step=0.1 value=49.56>
+                    <span><input id=BYawVal type=number min=-360 max=360 value=49.56>°</span>
+                </p>
+                <p>
+                    <label>Mean Anomaly</label>
+                    <input id=BAnomaly type=range min=-360 max=360 step=0.01 value=19.37>
+                    <span><input id=BAnomalyVal type=number min=-360 max=360 value=19.37>°</span>
+                </p>
+            </form><form class='transfer'>
+                <p>
+                <label>Acceleration</label>
+                <input id=acceleration type=range min=0 max=10 step=0.01 value=0>
+                <span><input id=accelerationVal type=number min=0 max=10 step=0.01 value=0>G</span>
+                <p>Acceleration of zero will assume magic impulse burns</p>
+                </p>
+                <p>
+                <label>Time Spent Accelerating</label>
+                <input id=timeAccelerating type=range min=0 max=100 value=0>
+                <span><input id=timeAcceleratingVal type=number min=0 max=100 value=0>%</span>
+                <p>Zero time will assume impulse maneuvers</p>
+                </p>
+            </form>
+        </div>
+    </div>
     <script src="app.js"></script>
 </BODY>
 </HTML>

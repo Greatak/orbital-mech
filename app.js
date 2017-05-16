@@ -3,22 +3,29 @@ var System = (function(win,doc,undefined){
         width = 0,
         height = 0,
         planetLock = 1,
+        pixelRatio = 0,
         canvas = $('<canvas#main-canvas>'),
+        results = $('.transfer-info')[0],
+        transferPanels = $('.transfer-option'),
         ctx = canvas.getContext('2d'),
         parameters = {
             starMass: 1,
             AMass: 1,
             AAxis: 1,
-            AEccentricity: 0.017,
+            //AEccentricity: 0.017,
+            AEccentricity: 0,
             AInclination: 0,
             AYaw: -0.2,
             AAnomaly: 6.26,
             BMass: 0.107,
-            BAxis: 1.524,
-            BEccentricity: 0.09,
+            BAxis: 1.523679,
+            //BEccentricity: 0.09,
+            BEccentricity: 0,
             BInclination: 0,
             BYaw: 0.86,
-            BAnomaly: 0.34
+            BAnomaly: 0.34,
+            transferType: 'hohmann',
+            hohmannApo: 1
         };
 
     var tester = $('<p#test>');
@@ -42,10 +49,10 @@ var System = (function(win,doc,undefined){
         c.clearRect(0,0,width,height);
         c.save();
         c.translate(width/2,height/2);
-        if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
+        //if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
         bodies.forEach(function(i){ i.draw(c); });
         var p1 = [ bodies[planetLock].ax, bodies[planetLock].ay];
-        var t = bodies[planetLock%2+1].latus / (1 + (bodies[planetLock%2+1].eccentricity*Math.cos(bodies[planetLock].trueAnomaly-bodies[planetLock%2+1].yaw+bodies[planetLock].yaw+pi)));
+        var t = bodies[planetLock%2+1].drawLatus / (1 + (bodies[planetLock%2+1].eccentricity*Math.cos(bodies[planetLock].trueAnomaly-bodies[planetLock%2+1].yaw+bodies[planetLock].yaw+pi)));
         var p2 = [ t * Math.cos(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi), t * Math.sin(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi)];
         var v = [p2[0]-p1[0],p2[1]-p1[1]];
         var angle = Math.atan(v[1]/v[0])+pi;
@@ -62,9 +69,15 @@ var System = (function(win,doc,undefined){
         c.strokeWidth = 5;
         c.stroke();
         c.restore();
+
+        var r = new Orbit({center:bodies[0],majorAxis:bodies[planetLock].majorAxis,eccentricity:bodies[planetLock].eccentricity}).transfer(
+            new Orbit({center:bodies[0],majorAxis:bodies[planetLock%2+1].majorAxis,eccentricity:bodies[planetLock%2+1].eccentricity})
+        );
+        results.innerHTML = 'dv: '+r.dv.toFixed(2) + '\ndt: ' + r.dt.toFixed(0);
         
-        tester.textContent = 'theta:' + (angle/pi).toFixed(2);
+        tester.textContent = 'min:' + testMin.toFixed(2) +'m/s';
     }
+    var testMin = 0;
 
     var bodies = [];
     function Body(obj){
@@ -75,10 +88,11 @@ var System = (function(win,doc,undefined){
         this.x = 0;                         //where now?
         this.y = 0;                         //in the y direction!
         this.r = 0;                         //polar coord
+        this.trueR = 0;                     //polar coord, but in meters
         this.size = 0;                      //how big to draw
         this.color = '#4d8';                //what color to draw
         this.mass = 0;                      //for period stuff
-        this.majorAxis = 0;                 //how far it actually orbits in AU
+        this.majorAxis = 0;                 //how far it actually orbits in meters
         this.period = 0;                    //how long it takes to draw it going around, gets normalized
         this.truePeriod = 0;                //how long in seconds it actually orbits, calculated
         this.eccentricity = 0;              //how wonky the orbit?
@@ -86,25 +100,25 @@ var System = (function(win,doc,undefined){
         this.yaw = 0;                       //rotating the ellipse
         this.anomaly = 0;                   //where is it in radians along the ellipse? will update
         this.minorAxis = 0;                 //calculated
-        this.latus = 0;                     //calculated
+        this.pixelRatio = 0;                //calculated, majorAxis/drawMajor
+        this.drawLatus = 0;                 //calculated
         this.linearEccentricity = 0;        //calculated
         this.drawArc = true;                //should it show an orbit arc?
         this.drawMajor = 0;                 //the displayed ellipse parameter, normalized
         this.drawMinor = 0;                 //the other one, also normalized
         this.trueAnomaly = 0;               //for drawing
+        this.grav = 0;                      //standard gravitational parameter = grav constant * mass
         this.id = bodies.length;
 
         for(var i in obj) this[i] = obj[i];
 
-        this.change();
-
         bodies.push(this);
     }
     function updateBody(dt){
-        this.anomaly += this.period * dt;
+        //this.anomaly += this.period * dt;
         this.anomaly = this.anomaly%(2*pi);
         this.trueAnomaly = meanToTrue(this.eccentricity,this.anomaly);
-        this.r = this.latus / (1 + (this.eccentricity*Math.cos(this.trueAnomaly)));
+        this.r = this.getR(this.trueAnomaly);
         this.x = this.r * Math.cos(this.trueAnomaly);
         this.y = this.r * Math.sin(this.trueAnomaly);
         var s = Math.sin(this.yaw),
@@ -135,7 +149,14 @@ var System = (function(win,doc,undefined){
         c.restore();
     }
     Body.prototype.draw = drawBody;
+    function bodyGetR(angle, real){
+        var o = this.drawLatus / (1 + (this.eccentricity*Math.cos(angle)));
+        if(real) o *= pixelRatio;
+        return o;
+    }
+    Body.prototype.getR = bodyGetR;
     function bodyChange(){
+        this.grav = 6.67408e-11 * this.mass;
         if(this.id == 0) return;
         this.yawS = Math.sin(this.yaw);
         this.yawC = Math.cos(this.yaw);
@@ -148,16 +169,72 @@ var System = (function(win,doc,undefined){
             this.drawMajor = (height/2) - 40;
             this.drawMinor = Math.sqrt(1-(this.eccentricity*this.eccentricity))*this.drawMajor;
             this.anomaly -= bodies[1].anomaly;
-            this.latus = (this.drawMinor*this.drawMinor)/this.drawMajor
+            this.drawLatus = (this.drawMinor*this.drawMinor)/this.drawMajor
             this.linearEccentricity = -1* Math.sqrt((this.drawMajor*this.drawMajor)-(this.drawMinor*this.drawMinor));
             bodies[1].anomaly = 0;
             bodies[1].drawMajor = this.drawMajor * (bodies[1].majorAxis/this.majorAxis);
             bodies[1].drawMinor = Math.sqrt(1-(bodies[1].eccentricity*bodies[1].eccentricity))*bodies[1].drawMajor;
             bodies[1].linearEccentricity = -1* Math.sqrt((bodies[1].drawMajor*bodies[1].drawMajor)-(bodies[1].drawMinor*bodies[1].drawMinor));
-            bodies[1].latus = (bodies[1].drawMinor*bodies[1].drawMinor)/bodies[1].drawMajor;
+            bodies[1].drawLatus = (bodies[1].drawMinor*bodies[1].drawMinor)/bodies[1].drawMajor;
+            pixelRatio = this.majorAxis/this.drawMajor;
         }
     }
     Body.prototype.change = bodyChange;
+
+    function Orbit(obj){
+        this.majorAxis = 0;
+        this.minorAxis = 0;
+        this.latus = 0;
+        this.eccentricity = 0;
+        this.linearEccentricity = 0;
+        this.anomaly = 0;
+        this.center = 0;
+
+        for(var i in obj) this[i] = obj[i];
+
+        this.minorAxis = Math.sqrt(1-(this.eccentricity*this.eccentricity))*this.majorAxis;
+        this.latus = (this.minorAxis*this.minorAxis)/this.majorAxis;
+        this.linearEccentricity = Math.sqrt((this.majorAxis*this.majorAxis)-(this.minorAxis*this.minorAxis));
+    }
+    function orbitGetR(angle){
+        if(!angle) var angle = this.anomaly;
+        return this.latus / (1 + (this.eccentricity*Math.cos(angle)));
+    }
+    Orbit.prototype.getR = orbitGetR;
+    function orbitTransfer(orbit){
+        if(this.center != orbit.center) return NaN;
+        var angle = pi;
+        //angle is specified, change it but defaulting to Hohmann for now
+        var r2 = orbit.getR(this.anomaly+angle);
+        //if one tangent or bielliptic
+        var tA = (this.getR()+r2)/2;
+        var tEcc = 1 - (this.majorAxis/tA);
+        var tOrbit = new Orbit({majorAxis:tA,eccentricity:tEcc,center:this.center});
+        if(parameters.transferType == 'hohmann'){
+            var apoapsis = orbit.majorAxis * parameters.hohmannApo;
+            var tA1 = (this.majorAxis + apoapsis)/2;
+            var tA2 = (orbit.majorAxis + apoapsis)/2;
+            var v1 = visViva(this.center,this.getR(),tA1) - visViva(this.center,this.getR(),this.majorAxis);
+            var v2 = visViva(this.center,apoapsis,tA2) - visViva(this.center,apoapsis,tA1);
+            var v3 = visViva(this.center,orbit.getR(this.anomaly+pi),tA2) - visViva(this.center,orbit.getR(this.anomaly+pi),orbit.majorAxis);
+            var dv = Math.abs(v1)+Math.abs(v2)+Math.abs(v3);
+            var dt = (pi * Math.sqrt(((tA1*tA1*tA1)/this.center.grav))) + ((parameters.hohmannApo==1)?0:(pi * Math.sqrt(((tA2*tA2*tA2)/this.center.grav))));
+            return {dv:dv,dt:dt};
+        }else if(parameters.transferType == 'tangent'){
+            var anom2 = Math.acos((((tA*(1-(tEcc*tEcc)))/r2)-1)/tEcc);
+            var flightAngle = Math.atan((tEcc*Math.sin(anom2))/(1+(tEcc*Math.cos(anom2))));
+            var va = visViva(this.center,this.getR(),this.majorAxis);
+            var vt1 = visViva(tOrbit.center,tOrbit.getR(this.anomaly),tOrbit.majorAxis)
+            var v1 = Math.abs(vt1 - va);
+            var vt2 = visViva(tOrbit.center,tOrbit.getR(anom2),tOrbit.majorAxis);
+            var vb = visViva(orbit.center,orbit.getR(anom2),orbit.majorAxis);
+            var v2 = Math.abs(Math.sqrt((vt2*vt2)+(vb*vb)-(2*vt2*vb*Math.cos(flightAngle))));
+            var eAnom = Math.acos((tEcc+Math.cos(anom2))/(1 + (tEcc * Math.cos(anom2))));
+            var time = (eAnom-(tEcc*Math.sin(eAnom)))*Math.sqrt((tA*tA*tA)/this.center.grav);
+            return {dv:v1+v2,dt:time};
+        }
+    }
+    Orbit.prototype.transfer = orbitTransfer;
 
     function init(){
         width = win.innerHeight*1.5;
@@ -176,6 +253,15 @@ var System = (function(win,doc,undefined){
         requestAnimationFrame(loop);
     }
     win.addEventListener('load',init);
+
+    function handleTransferChange(e){
+        transferPanels.forEach(function(d){
+            d.style.display = 'none';
+        });
+        parameters.transferType = e.target.value;
+        $('#transfer-'+e.target.value)[0].style.display = 'block';
+    }
+    $('select')[0].addEventListener('change',handleTransferChange);
 
     function handleInput(e){
         var id = e.target.id,
@@ -196,24 +282,32 @@ var System = (function(win,doc,undefined){
         d.addEventListener('input',handleInput);
     });
     function updateParams(){
-        bodies[0].mass = parameters.starMass*1.989e30;
+        bodies[0].mass = parameters.starMass*1.98855e30;                      //in kg
         var which = (parameters.AAxis > parameters.BAxis)?2:1;
         planetLock = which;
-        bodies[which].mass = parameters.AMass*5.972e24;
-        bodies[which].majorAxis = parameters.AAxis*1.496e+11;
+        bodies[which].color = '#4d8';
+        bodies[which%2+1].color = '#d64';
+        bodies[which].mass = parameters.AMass*5.97237e24;                     //in kg
+        bodies[which].majorAxis = parameters.AAxis*149598023000;               //in meters
         bodies[which].eccentricity = parameters.AEccentricity;
-        bodies[which].inclination = parameters.AInclination*(pi/180);
+        bodies[which].inclination = parameters.AInclination*(pi/180);       //in radians
         bodies[which].yaw = parameters.AYaw*(pi/180);
         bodies[which].anomaly = parameters.AAnomaly*(pi/180);
-        bodies[which%2+1].mass = parameters.BMass*5.972e24;
-        bodies[which%2+1].majorAxis = parameters.BAxis*1.496e+11;
+        bodies[which%2+1].mass = parameters.BMass*5.97237e24;
+        bodies[which%2+1].majorAxis = parameters.BAxis*149598023000;
         bodies[which%2+1].eccentricity = parameters.BEccentricity;
         bodies[which%2+1].inclination = parameters.BInclination*(pi/180);
         bodies[which%2+1].yaw = parameters.BYaw*(pi/180);
         bodies[which%2+1].anomaly = parameters.BAnomaly*(pi/180);
 
+        bodies[0].change();
         bodies[1].change();
         bodies[2].change();
+    }
+
+    function visViva(center,distance,orbit){
+        var o = Math.sqrt(center.grav * ((2/distance)-(1/orbit)));
+        return o;
     }
 
     function meanToTrue(ecc, anom){
@@ -244,7 +338,7 @@ var System = (function(win,doc,undefined){
         return Math.atan2(sinf,cosf);
     }
 
-    return bodies;
+    return {b:bodies,o:Orbit};
 })(window,document);
 
 function $(what){

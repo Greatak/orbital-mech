@@ -7,7 +7,14 @@
     <link rel=stylesheet href=main.css>
 </HEAD>
 <BODY>
-    <div class='main-container'></div>
+    <div class='main-container'>
+        <div class='transfer-info'>
+            <h1>Hohmann Two Impulse</h2>
+            <p>DeltaV: 3.21km/s</p>
+            <p>Transit Time: 3d, 5h, 32m</p>
+            <p>Synodic Period: 2y 1.6m</p>
+        </div>
+    </div>
     <div class='settings'> 
         <p class=toggle-box>
             <input id=system-settings type=radio name=settings-toggle checked>
@@ -21,7 +28,7 @@
                     <label>Star Mass:</label>
                     <span><input id=starMass type=number min=0.07 max=150 value=1>M<sub>Sun</sub></span>
                 </p>
-                <p>Starting from</p>
+                <h1 id=starting-from>Starting from</h1>
                 <p class='inline'>
                     <label>Mass:</label>
                     <span><input id=AMass type=number min=0 max=1000 value=1>M<sub>Earth</sub></span>
@@ -50,7 +57,7 @@
                     <input id=AAnomaly type=range min=-360 max=360 step=0.01 value=358.62>
                     <span><input id=AAnomalyVal type=number min=-360 max=360 value=358.62>°</span>
                 </p>
-                <p>Going to</p>
+                <h1 id=going-to>Going to</h1>
                 <p class='inline'>
                     <label>Mass:</label>
                     <span><input id=BMass type=number min=0 max=1000 value=0.107>M<sub>Earth</sub></span>
@@ -80,18 +87,75 @@
                     <span><input id=BAnomalyVal type=number min=-360 max=360 value=19.37>°</span>
                 </p>
             </form><form class='transfer'>
-                <p>
-                <label>Acceleration</label>
-                <input id=acceleration type=range min=0 max=10 step=0.01 value=0>
-                <span><input id=accelerationVal type=number min=0 max=10 step=0.01 value=0>G</span>
-                <p>Acceleration of zero will assume magic impulse burns</p>
-                </p>
-                <p>
-                <label>Time Spent Accelerating</label>
-                <input id=timeAccelerating type=range min=0 max=100 value=0>
-                <span><input id=timeAcceleratingVal type=number min=0 max=100 value=0>%</span>
-                <p>Zero time will assume impulse maneuvers</p>
-                </p>
+                <select>
+                    <option value=hohmann>Bi-Elliptic (Hohmann-like)</option>
+                    <option value=tangent>Single Tangent Elliptical</option>
+                    <option value=accel>Constant Acceleration</option>
+                    <option value=thrust>Constant Thrust</option>
+                </select>
+                <div id=transfer-hohmann class=transfer-option>
+                    <p>Bi-Elliptic transfer orbits use a pair of elliptical orbits to transfer between orbits. A Hohmann transfer is a special case where the second ellipse is just the destination orbit. Bi-Elliptic transfers are sometimes lower in deltaV than a Hohmman transfer, but take longer.</p>
+                    <p>
+                        <label>Transfer Apoapsis</label>
+                        <input id=hohmannApo type=range min=1 max=100 step=0.1 value=1>
+                        <input id=hohmannApoVal type=number min=1 max=100 step=0.1 value=1>
+                        <p>In multiples of the destination orbital distance. 1 is a Hohmann-like transfer.</p>
+                    </p>
+                </div>
+                <div id=transfer-tangent class=transfer-option>
+                    <p>Single tangent transfer orbits begin like a bi-tangential transfer, but upon entering the destination orbit, change their direction, allowing for reduced travel time and wider launch windows. Specifying any one value below will set the other two.</p>
+                    <p>
+                        <label>Transfer Apoapsis</label>
+                        <input id=tangentApo type=range min=1 max=100 step=0.1 value=1>
+                        <input id=tangentApoVal type=number min=1 max=100 step=0.1 value=1>
+                        <p>In multiples of the destination orbital distance. 1 is a Hohmann-like transfer.</p>
+                    </p>
+                    <p>
+                        <label>Transfer Angle</label>
+                        <input id=tangentAngle type=range min=0 max=180 step=0.1 value=0>
+                        <span><input id=tangentAngleVal type=number min=0 max=180 step=0.1 value=0>°</span>
+                        <p>Determines the necessary alignment for intercepts. 180° or more becomes bi-tangential.</p>
+                    </p>
+                    <p>
+                        <label>Transfer Time</label>
+                        <input id=tangentTime type=range min=0 max=1 step=0.01 value=0>
+                        <input id=tangentTimeVal type=number min=0 max=1 step=0.01 value=0>
+                        <p>Fraction of Hohmman-like time. Values less than the minimum time will be increased to the minimum.</p>
+                    </p>
+                </div>
+                <div id=transfer-accel class=transfer-option>
+                    <p>Constant acceleration transfers use brachistochrone trajectories to go in a relatively straight line from start to destination.</p>
+                    <p>
+                        <label>Acceleration</label>
+                        <input id=accelAcceleration type=range min=0 max=10 step=0.01 value=0>
+                        <span><input id=accelAccelerationVal type=number min=0 max=10 step=0.01 value=0>G</span>
+                    </p>
+                    <p>
+                        <label>Time Spent Accelerating</label>
+                        <input id=accelTime type=range min=0 max=100 value=0>
+                        <span><input id=accelTimeVal type=number min=0 max=100 value=0>%</span>
+                    </p>
+                </div>
+                <div id=transfer-thrust class=transfer-option>
+                    <p>Similar to constant acceleration, a constant thrust transfer uses a hyperbolic trajectory with increasing acceleration as spacecraft mass is reduced along the way.</p>
+                    <p class=inline>
+                        <label>Dry Mass</label>
+                        <span><input id=thrustDry type=number min=0 value=0>kg</span>
+                    </p>
+                    <p class=inline>
+                        <label>Propellant Mass</label>
+                        <span><input id=thrustProp type=number min=0 value=0>kg</span>
+                    </p>
+                    <p class=inline>
+                        <label>Thrust</label>
+                        <span><input id=thrustThrust type=number min=0 value=0>N</span>
+                    </p>
+                    <p>
+                        <label>Time Spent Accelerating</label>
+                        <input id=thrustTime type=range min=0 max=100 value=0>
+                        <span><input id=thrustTimeVal type=number min=0 max=100 value=0>%</span>
+                    </p>
+                </div>
             </form>
         </div>
     </div>

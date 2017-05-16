@@ -2,9 +2,16 @@ body {
     background: #444;
     color: #fff;
     font-family: 'Open Sans',sans-serif;
-    font-size: 20px;
+    font-size: 16px;
     margin: 0;
     overflow: hidden;
+}
+h1 {
+    font-size: 1.3em;
+    margin: 0;
+}
+p {
+    margin: 0 0.5em;
 }
 
 #test {
@@ -15,30 +22,49 @@ body {
 
 .main-container {
     display: inline-block;
+    position: relative;
+}
+.transfer-info {
+    bottom: 0;
+    margin: 1em;
+    position: absolute;
+    right: 0;
+    z-index: 10;
 }
 .settings {
-    height: 100vh;
+    background: #666;
+    box-sizing: border-box;
+    height: calc(100vh - 3em);
     overflow-x: hidden;
     position: absolute;
     right: 0;
-    top: 0;
+    top: 3em;
     width: calc(100vw - 155vh);
 }
 input[name=settings-toggle] {
     display: none;
 }
-.toggle-box { margin: 0; }
+.toggle-box {
+    background:#666;
+    box-sizing: border-box;
+    margin: 0; 
+    position: fixed;
+    top: 0;
+    width: calc(100vw - 155vh);
+}
 .toggle-box > label{
-    border-bottom: solid 3px #888;
+    background: #888;
     box-sizing: border-box;
     display:inline-block;
+    font-size: 1.3em;
     line-height: 2;
+    opacity: 1;
     text-align: center;
     width: 50%;
 }
-.toggle-box > label:first-of-type { border: none; }
-.toggle-box > input:checked ~ label { border: none; }
-.toggle-box > input:checked + label { border-bottom: solid 3px #888; }
+.toggle-box > label:first-of-type { background: none; opacity: 0.7;}
+.toggle-box > input:checked ~ label { background: none; opacity: 0.7;}
+.toggle-box > input:checked + label { background: #888; opacity: 1;}
 .settings-box {
     transition: margin 0.5s;
     width: 200%;
@@ -53,12 +79,20 @@ input[name=settings-toggle]:checked + .settings-box {
     vertical-align: top;
     width: 50%;
 }
+select {
+    background: #888;
+    border: none;
+    color: #fff;
+    font-size: 1.2em;
+    padding: 0.3em 0;
+    width:100%;
+}
 label {
     display: block;
 }
 input[type=range] {
     display: inline-block;
-    width: calc(100% - 8em);
+    width: calc(100% - 9em);
 }
 input[type=number] {
     background: none;
@@ -68,7 +102,7 @@ input[type=number] {
     font-size: 20px;
     display: inline-block;
     text-align: right;
-    width: 3em;
+    width: 4em;
 }
 .inline label {
     display: inline-block;
@@ -76,4 +110,14 @@ input[type=number] {
 }
 .inline input {
     display: inline-block;
+}
+.transfer-option {
+    padding: 1em 0;
+}
+
+#starting-from {
+    background: #4d8;
+}
+#going-to {
+    background: #d64;
 }

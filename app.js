@@ -7,6 +7,7 @@ var System = (function(win,doc,undefined){
         canvas = $('<canvas#main-canvas>'),
         results = $('.transfer-info')[0],
         transferPanels = $('.transfer-option'),
+        redraw = true,
         ctx = canvas.getContext('2d'),
         parameters = {
             starMass: 1,
@@ -40,8 +41,11 @@ var System = (function(win,doc,undefined){
         dt = (oldTime-time)/1000;
         oldTime = time;
 
-        bodies.forEach(function(i){ i.update(dt); });
-        draw(ctx);
+        if(redraw){
+            bodies.forEach(function(i){ i.update(dt); });
+            draw(ctx);
+            redraw = false;
+        }
     }
 
     //keep the reference frame coherent
@@ -260,6 +264,7 @@ var System = (function(win,doc,undefined){
         });
         parameters.transferType = e.target.value;
         $('#transfer-'+e.target.value)[0].style.display = 'block';
+        redraw = true;
     }
     $('select')[0].addEventListener('change',handleTransferChange);
 
@@ -277,6 +282,7 @@ var System = (function(win,doc,undefined){
         }
         parameters[ex] = e.target.value;
         updateParams();
+        redraw = true;
     }
     $('input').forEach(function(d){
         d.addEventListener('input',handleInput);

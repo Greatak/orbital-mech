@@ -53,22 +53,32 @@ var System = (function(win,doc,undefined){
         c.clearRect(0,0,width,height);
         c.save();
         c.translate(width/2,height/2);
+        var scale = 1;
         //if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
-        bodies.forEach(function(i){ i.draw(c); });
+        bodies.forEach(function(i){ i.draw(c,scale); });
         var p1 = [ bodies[planetLock].ax, bodies[planetLock].ay];
         var t = bodies[planetLock%2+1].drawLatus / (1 + (bodies[planetLock%2+1].eccentricity*Math.cos(bodies[planetLock].trueAnomaly-bodies[planetLock%2+1].yaw+bodies[planetLock].yaw+pi)));
         var p2 = [ t * Math.cos(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi), t * Math.sin(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi)];
         var v = [p2[0]-p1[0],p2[1]-p1[1]];
         var angle = Math.atan(v[1]/v[0])+pi;
-        var d = Math.sqrt((v[0]*v[0])+(v[1]*v[1]))/2;
-        var m = Math.sqrt((d*d)-((d-bodies[planetLock].r)*(d-bodies[planetLock].r)));
+        var d = Math.sqrt((v[0]*v[0])+(v[1]*v[1]));
+        v[0] /= d;
+        v[1] /= d;
         c.translate(bodies[planetLock].ax,bodies[planetLock].ay);
         c.beginPath();
-        if(p2[0]>p1[0]){
-            c.ellipse(v[0]/2,v[1]/2,d,m,angle,pi,2*pi,false);
-        }else{
-            c.ellipse(v[0]/2,v[1]/2,d,m,angle,0,pi,false);
+        if(parameters.transferType == 'hohmann'){
+            d *= parameters.hohmannApo;
+            var m = Math.sqrt((d/2*d/2)-((d/2-bodies[planetLock].r)*(d/2-bodies[planetLock].r)));
+            c.ellipse(v[0]*d/2,v[1]*d/2,d/2,m,angle,0,pi,false);
+            if(parameters.hohmannApo != 1){
+
+            }
         }
+        // if(p2[0]>p1[0]){
+        //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,pi,2*pi,false);
+        // }else{
+        //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,0,pi,false);
+        // }
         c.strokeStyle = '#fff';
         c.strokeWidth = 5;
         c.stroke();

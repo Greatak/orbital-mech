@@ -111,8 +111,14 @@ input[type=number] {
 .inline input {
     display: inline-block;
 }
+.detail {
+    font-size: 14px;
+}
 .transfer-option {
     padding: 1em 0;
+}
+.transfer-option > p {
+    margin: 1rem 0.5rem;
 }
 
 #starting-from {

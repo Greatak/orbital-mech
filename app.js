@@ -35,15 +35,25 @@ var System = (function(win,doc,undefined){
 
     //basic loop stuff, don't plan on getting too fancy with frameskipping or anything
     var dt = 0,
-        oldTime = 0;
+        oldTime = 0,
+        scale = 0;
     function loop(time){
         requestAnimationFrame(loop);
-        dt = (oldTime-time)/1000;
+        dt = (time-oldTime)/1000;
         oldTime = time;
 
+        scale = 0;
+        orbits.forEach(function(d){
+            d.update(dt); 
+            if(scale < d.majorAxis+d.linearEccentricity) scale = d.majorAxis+d.linearEccentricity; 
+        });
+        scale = (height/2-40)/scale;
+
         if(redraw){
-            bodies.forEach(function(i){ i.update(dt); });
+            c.save();
             draw(ctx);
+            orbits.forEach(function(d){ d.draw(ctx,scale); });
+            ctx.restore();
             redraw = false;
         }
     }
@@ -51,45 +61,46 @@ var System = (function(win,doc,undefined){
     //keep the reference frame coherent
     function draw(c){
         c.clearRect(0,0,width,height);
-        c.save();
         c.translate(width/2,height/2);
-        var scale = 1;
         //if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
-        bodies.forEach(function(i){ i.draw(c,scale); });
-        var p1 = [ bodies[planetLock].ax, bodies[planetLock].ay];
-        var t = bodies[planetLock%2+1].drawLatus / (1 + (bodies[planetLock%2+1].eccentricity*Math.cos(bodies[planetLock].trueAnomaly-bodies[planetLock%2+1].yaw+bodies[planetLock].yaw+pi)));
-        var p2 = [ t * Math.cos(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi), t * Math.sin(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi)];
-        var v = [p2[0]-p1[0],p2[1]-p1[1]];
-        var angle = Math.atan(v[1]/v[0])+pi;
-        var d = Math.sqrt((v[0]*v[0])+(v[1]*v[1]));
-        v[0] /= d;
-        v[1] /= d;
-        c.translate(bodies[planetLock].ax,bodies[planetLock].ay);
-        c.beginPath();
-        if(parameters.transferType == 'hohmann'){
-            d *= parameters.hohmannApo;
-            var m = Math.sqrt((d/2*d/2)-((d/2-bodies[planetLock].r)*(d/2-bodies[planetLock].r)));
-            c.ellipse(v[0]*d/2,v[1]*d/2,d/2,m,angle,0,pi,false);
-            if(parameters.hohmannApo != 1){
-
-            }
-        }
-        // if(p2[0]>p1[0]){
-        //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,pi,2*pi,false);
-        // }else{
-        //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,0,pi,false);
+        //bodies.forEach(function(i){ i.draw(c,scale); });
+        // var p1 = [ bodies[planetLock].ax, bodies[planetLock].ay];
+        // var t = bodies[planetLock%2+1].drawLatus / (1 + (bodies[planetLock%2+1].eccentricity*Math.cos(bodies[planetLock].trueAnomaly-bodies[planetLock%2+1].yaw+bodies[planetLock].yaw+pi)));
+        // var p2 = [ t * Math.cos(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi), t * Math.sin(bodies[planetLock].trueAnomaly+bodies[planetLock].yaw+pi)];
+        // var v = [p2[0]-p1[0],p2[1]-p1[1]];
+        // var angle = Math.atan(v[1]/v[0])+pi;
+        // var d = Math.sqrt((v[0]*v[0])+(v[1]*v[1]));
+        // v[0] /= d;
+        // v[1] /= d;
+        // c.translate(bodies[planetLock].ax,bodies[planetLock].ay);
+        // c.beginPath();
+        // if(parameters.transferType == 'hohmann'){
+        //     d *= parameters.hohmannApo;
+        //     var m = Math.sqrt((d/2*d/2)-((d/2-bodies[planetLock].r)*(d/2-bodies[planetLock].r)));
+        //     c.ellipse(v[0]*d/2,v[1]*d/2,d/2,m,angle,0,pi,false);
+        //     if(parameters.hohmannApo != 1){
+        //         //draw the second half
+        //     }
         // }
-        c.strokeStyle = '#fff';
-        c.strokeWidth = 5;
-        c.stroke();
-        c.restore();
+        // if(parameters.transferType == 'tangent'){
+        //     //draw part of the hohmann one
+        // }
+        // // if(p2[0]>p1[0]){
+        // //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,pi,2*pi,false);
+        // // }else{
+        // //     c.ellipse(v[0]/2,v[1]/2,d,m,angle,0,pi,false);
+        // // }
+        // c.strokeStyle = '#fff';
+        // c.strokeWidth = 5;
+        // c.stroke();
+        // c.restore();
 
-        var r = new Orbit({center:bodies[0],majorAxis:bodies[planetLock].majorAxis,eccentricity:bodies[planetLock].eccentricity}).transfer(
-            new Orbit({center:bodies[0],majorAxis:bodies[planetLock%2+1].majorAxis,eccentricity:bodies[planetLock%2+1].eccentricity})
-        );
-        results.innerHTML = 'dv: '+r.dv.toFixed(2) + '\ndt: ' + r.dt.toFixed(0);
+        // // var r = new Orbit({center:bodies[0],majorAxis:bodies[planetLock].majorAxis,eccentricity:bodies[planetLock].eccentricity}).transfer(
+        // //     new Orbit({center:bodies[0],majorAxis:bodies[planetLock%2+1].majorAxis,eccentricity:bodies[planetLock%2+1].eccentricity})
+        // // );
+        // // results.innerHTML = 'dv: '+r.dv.toFixed(2) + '\ndt: ' + r.dt.toFixed(0);
         
-        tester.textContent = 'min:' + testMin.toFixed(2) +'m/s';
+        //tester.textContent = 'min:' + testMin.toFixed(2) +'m/s';
     }
     var testMin = 0;
 
@@ -195,42 +206,92 @@ var System = (function(win,doc,undefined){
     }
     Body.prototype.change = bodyChange;
 
+    var orbits = [];
     function Orbit(obj){
+        this.transfer = 0;
+        //orbital parameters
         this.majorAxis = 0;
-        this.minorAxis = 0;
-        this.latus = 0;
+        this.minorAxis = 0;             //calculated
+        this.latus = 0;                 //calculated
         this.eccentricity = 0;
-        this.linearEccentricity = 0;
+        this.linearEccentricity = 0;    //calculated
         this.anomaly = 0;
-        this.center = 0;
+        this.yaw = 0;
+        this.inclination = 0;
+        this.center = 0;                //should be an object
+        this.trueAnomaly = 0;
+
+        //optional parameters
+        this.mass = 0;
+        this.grav = 0;                  //calculated
+
+        //drawing variables
+        this.drawAngle = 2*pi;
+        this.drawAngleOffset = 0;
+        this.x = 0;
+        this.y = 0;
+        this.yawS = 0;
+        this.yawC = 0;
 
         for(var i in obj) this[i] = obj[i];
 
+        orbits.push(this);
+    }
+    function orbitUpdate(dt){
         this.minorAxis = Math.sqrt(1-(this.eccentricity*this.eccentricity))*this.majorAxis;
         this.latus = (this.minorAxis*this.minorAxis)/this.majorAxis;
         this.linearEccentricity = Math.sqrt((this.majorAxis*this.majorAxis)-(this.minorAxis*this.minorAxis));
+        this.trueAnomaly = meanToTrue(this.eccentricity,this.anomaly);
+
+        this.yawS = Math.sin(this.yaw);
+        this.yawC = Math.cos(this.yaw);
+        var r = this.getR(this.trueAnomaly);
+        this.x = (r * Math.cos(this.trueAnomaly+this.yaw));
+        this.y = r * Math.sin(this.trueAnomaly+this.yaw);
     }
+    Orbit.prototype.update = orbitUpdate;
     function orbitGetR(angle){
-        if(!angle) var angle = this.anomaly;
+        if(!angle) angle = trueAnomaly;
         return this.latus / (1 + (this.eccentricity*Math.cos(angle)));
     }
     Orbit.prototype.getR = orbitGetR;
-    function orbitTransfer(orbit){
-        if(this.center != orbit.center) return NaN;
+    function orbitDraw(c,scale){
+        c.save();
+        c.rotate(this.yaw);
+        c.translate(-this.linearEccentricity*scale,0)
+        c.strokeStyle = '#fff';
+        c.strokeWidth = 2;
+        c.beginPath();
+        c.ellipse(0,0,this.majorAxis*scale,this.minorAxis*scale,0,
+            this.drawAngleOffset,this.drawAngleOffset+this.drawAngle,false);
+        c.stroke();
+        c.restore();
+
+        c.save();
+        c.strokeStyle = "#ff0";
+        c.beginPath();
+        c.arc(this.x*scale,this.y*scale,5,0,2*pi,false);
+        c.stroke();
+        c.restore();
+    }
+    Orbit.prototype.draw = orbitDraw;
+    function orbitTransfer(orbit,dest){
+        if(this.center != dest.center) return NaN;
         var angle = pi;
         //angle is specified, change it but defaulting to Hohmann for now
-        var r2 = orbit.getR(this.anomaly+angle);
+        var r2 = dest.getR(this.anomaly+angle);
         //if one tangent or bielliptic
         var tA = (this.getR()+r2)/2;
         var tEcc = 1 - (this.majorAxis/tA);
-        var tOrbit = new Orbit({majorAxis:tA,eccentricity:tEcc,center:this.center});
+        orbit.majorAxis = tA;
+        orbit.eccentricity = tEcc;
         if(parameters.transferType == 'hohmann'){
-            var apoapsis = orbit.majorAxis * parameters.hohmannApo;
+            var apoapsis = dest.majorAxis * parameters.hohmannApo;
             var tA1 = (this.majorAxis + apoapsis)/2;
-            var tA2 = (orbit.majorAxis + apoapsis)/2;
+            var tA2 = (dest.majorAxis + apoapsis)/2;
             var v1 = visViva(this.center,this.getR(),tA1) - visViva(this.center,this.getR(),this.majorAxis);
             var v2 = visViva(this.center,apoapsis,tA2) - visViva(this.center,apoapsis,tA1);
-            var v3 = visViva(this.center,orbit.getR(this.anomaly+pi),tA2) - visViva(this.center,orbit.getR(this.anomaly+pi),orbit.majorAxis);
+            var v3 = visViva(this.center,dest.getR(this.anomaly+pi),tA2) - visViva(this.center,dest.getR(this.anomaly+pi),orbit.majorAxis);
             var dv = Math.abs(v1)+Math.abs(v2)+Math.abs(v3);
             var dt = (pi * Math.sqrt(((tA1*tA1*tA1)/this.center.grav))) + ((parameters.hohmannApo==1)?0:(pi * Math.sqrt(((tA2*tA2*tA2)/this.center.grav))));
             return {dv:dv,dt:dt};
@@ -238,10 +299,10 @@ var System = (function(win,doc,undefined){
             var anom2 = Math.acos((((tA*(1-(tEcc*tEcc)))/r2)-1)/tEcc);
             var flightAngle = Math.atan((tEcc*Math.sin(anom2))/(1+(tEcc*Math.cos(anom2))));
             var va = visViva(this.center,this.getR(),this.majorAxis);
-            var vt1 = visViva(tOrbit.center,tOrbit.getR(this.anomaly),tOrbit.majorAxis)
+            var vt1 = visViva(orbit.center,orbit.getR(this.anomaly),orbit.majorAxis)
             var v1 = Math.abs(vt1 - va);
-            var vt2 = visViva(tOrbit.center,tOrbit.getR(anom2),tOrbit.majorAxis);
-            var vb = visViva(orbit.center,orbit.getR(anom2),orbit.majorAxis);
+            var vt2 = visViva(orbit.center,orbit.getR(anom2),orbit.majorAxis);
+            var vb = visViva(dest.center,dest.getR(anom2),dest.majorAxis);
             var v2 = Math.abs(Math.sqrt((vt2*vt2)+(vb*vb)-(2*vt2*vb*Math.cos(flightAngle))));
             var eAnom = Math.acos((tEcc+Math.cos(anom2))/(1 + (tEcc * Math.cos(anom2))));
             var time = (eAnom-(tEcc*Math.sin(eAnom)))*Math.sqrt((tA*tA*tA)/this.center.grav);
@@ -257,9 +318,13 @@ var System = (function(win,doc,undefined){
         canvas.height = height;
         $('.main-container')[0].appendChild(canvas);
 
-        new Body({size:50, color:'#db4', drawArc:false, mass:1.99e30});//sun
-        new Body({size:10, majorAxis:1, anomaly:6.26, eccentricity: 0.017, yaw:-0.2, mass:5.97e24});//earth
-        new Body({size:10, color:'#d64', majorAxis:1.524, anomaly:0.34, eccentricity: 0.09, yaw:0.86, mass:6.39e23});//mars
+        //new Body({size:50, color:'#db4', drawArc:false, mass:1.99e30});//sun
+        new Orbit({mass:1.99e30});
+        new Orbit({center:orbits[0],majorAxis:149598023000, anomaly:6.26, eccentricity:0.017, yaw:-0.2, mass:5.97e24})
+        new Orbit({center:orbits[0], majorAxis:1.524*149598023000, anomaly:0.34, eccentricity: 0.09, yaw:0.86, mass:6.39e23});//mars
+        new Orbit({center:orbits[0]});
+        //new Body({size:10, majorAxis:1, anomaly:6.26, eccentricity: 0.017, yaw:-0.2, mass:5.97e24});//earth
+        //new Body({size:10, color:'#d64', majorAxis:1.524, anomaly:0.34, eccentricity: 0.09, yaw:0.86, mass:6.39e23});//mars
         //new Body({size:30, color:'#d86', majorAxis:5.2, anomaly:0.35, eccentricity: 0.05, yaw:1.75, mass:1.9e27});//jupiter
 
         updateParams();
@@ -298,27 +363,27 @@ var System = (function(win,doc,undefined){
         d.addEventListener('input',handleInput);
     });
     function updateParams(){
-        bodies[0].mass = parameters.starMass*1.98855e30;                      //in kg
+        orbits[0].mass = parameters.starMass*1.98855e30;                      //in kg
         var which = (parameters.AAxis > parameters.BAxis)?2:1;
         planetLock = which;
-        bodies[which].color = '#4d8';
-        bodies[which%2+1].color = '#d64';
-        bodies[which].mass = parameters.AMass*5.97237e24;                     //in kg
-        bodies[which].majorAxis = parameters.AAxis*149598023000;               //in meters
-        bodies[which].eccentricity = parameters.AEccentricity;
-        bodies[which].inclination = parameters.AInclination*(pi/180);       //in radians
-        bodies[which].yaw = parameters.AYaw*(pi/180);
-        bodies[which].anomaly = parameters.AAnomaly*(pi/180);
-        bodies[which%2+1].mass = parameters.BMass*5.97237e24;
-        bodies[which%2+1].majorAxis = parameters.BAxis*149598023000;
-        bodies[which%2+1].eccentricity = parameters.BEccentricity;
-        bodies[which%2+1].inclination = parameters.BInclination*(pi/180);
-        bodies[which%2+1].yaw = parameters.BYaw*(pi/180);
-        bodies[which%2+1].anomaly = parameters.BAnomaly*(pi/180);
+        orbits[which].color = '#4d8';
+        orbits[which%2+1].color = '#d64';
+        orbits[which].mass = parameters.AMass*5.97237e24;                     //in kg
+        orbits[which].majorAxis = parameters.AAxis*149598023000;               //in meters
+        orbits[which].eccentricity = parameters.AEccentricity;
+        orbits[which].inclination = parameters.AInclination*(pi/180);       //in radians
+        orbits[which].yaw = parameters.AYaw*(pi/180);
+        orbits[which].anomaly = parameters.AAnomaly*(pi/180);
+        orbits[which%2+1].mass = parameters.BMass*5.97237e24;
+        orbits[which%2+1].majorAxis = parameters.BAxis*149598023000;
+        orbits[which%2+1].eccentricity = parameters.BEccentricity;
+        orbits[which%2+1].inclination = parameters.BInclination*(pi/180);
+        orbits[which%2+1].yaw = parameters.BYaw*(pi/180);
+        orbits[which%2+1].anomaly = parameters.BAnomaly*(pi/180);
 
-        bodies[0].change();
-        bodies[1].change();
-        bodies[2].change();
+        // bodies[0].change();
+        // bodies[1].change();
+        // bodies[2].change();
     }
 
     function visViva(center,distance,orbit){
@@ -353,8 +418,13 @@ var System = (function(win,doc,undefined){
         var cosf = (Math.cos(t) - ecc)/(1 - (ecc * Math.cos(t)));
         return Math.atan2(sinf,cosf);
     }
+    function trueToEcc(angle,ecc){
+        var s = Math.sin(angle)*Math.sqrt(1 - (ecc*ecc))/(1 + ecc * Math.cos(angle)),
+            c = (ecc + Math.cos(angle))/(1 + ecc * Math.cos(angle));
+        return Math.atan2(s,c);
+    }
 
-    return {b:bodies,o:Orbit};
+    return {b:bodies,o:orbits};
 })(window,document);
 
 function $(what){

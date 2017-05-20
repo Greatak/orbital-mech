@@ -18,18 +18,18 @@ var System = (function(win,doc,undefined){
             AAxis: 1,
             AEccentricity: 0.017,
             AInclination: 0,
-            //AYaw: -11.2,
-            AYaw: 0,
-            //AAnomaly: 358.6,
-            AAnomaly: 0,
+            AYaw: -11.2,
+            //AYaw: 0,
+            AAnomaly: 358.6,
+            //AAnomaly: 0,
             BMass: 0.107,
             BAxis: 1.523679,
             BEccentricity: 0.09,
             BInclination: 0,
-            //BYaw: 49.55,
-            BYaw: 0,
-            //BAnomaly: 19.37,
-            BAnomaly: 180,
+            BYaw: 49.55,
+            //BYaw: 0,
+            BAnomaly: 19.37,
+            //BAnomaly: 180,
             transferType: 'hohmann',
             hohmannApo: 2
         };
@@ -69,6 +69,15 @@ var System = (function(win,doc,undefined){
     function draw(c){
         c.clearRect(0,0,width,height);
         c.translate(width/2,height/2);
+        transferDV.textContent = orbits[3].dv.toFixed(2);
+        var t = orbits[3].dt;
+        transferDT.textContent = Math.floor(t/3.154e+7) + 'y ';
+        t %= 3.154e+7;
+        transferDT.textContent += Math.floor(t/2.628e+6) + 'm ';
+        t %= 2.628e+6;
+        transferDT.textContent += Math.floor(t/86400) + 'd ';
+        t %= 86400;
+        transferDT.textContent += (t/3600).toFixed(1) +  'h';
         //if(planetLock){ c.rotate(-bodies[planetLock].yaw - bodies[planetLock].trueAnomaly) };
         //bodies.forEach(function(i){ i.draw(c,scale); });
         // var p1 = [ bodies[planetLock].ax, bodies[planetLock].ay];
@@ -147,6 +156,7 @@ var System = (function(win,doc,undefined){
         this.latus = (this.minorAxis*this.minorAxis)/this.majorAxis;
         this.linearEccentricity = Math.sqrt((this.majorAxis*this.majorAxis)-(this.minorAxis*this.minorAxis));
         this.trueAnomaly = meanToTrue(this.eccentricity,this.anomaly);
+        this.grav = this.mass * 6.67408e-11;
 
         if(this.majorAxis2){
             this.minorAxis2 = Math.sqrt(1-(this.eccentricity2*this.eccentricity2))*this.majorAxis2;
@@ -190,7 +200,7 @@ var System = (function(win,doc,undefined){
             c.save();
             c.rotate(this.yaw);
             c.strokeStyle = '#ff0';
-            c.strokeWidth = 3;
+            c.lineWidth = 3;
             c.beginPath();
             c.ellipse(-this.linearEccentricity*scale,0,this.majorAxis*scale,this.minorAxis*scale,0,
                 0,pi,false);
@@ -214,25 +224,28 @@ var System = (function(win,doc,undefined){
         redraw = true;
         if(parameters.transferType == 'hohmann'){
             orbit.transfer = 1;
-            var apoapsis = dest.getR(this.trueAnomaly+pi) * parameters.hohmannApo;
+            var apoapsis = dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi) * parameters.hohmannApo;
             var tA1 = (this.getR(this.trueAnomaly) + apoapsis)/2;
-            var tA2 = (dest.getR(this.trueAnomaly) + apoapsis)/2;
+            var tA2 = (dest.getR(this.trueAnomaly+this.yaw-dest.yaw) + apoapsis)/2;
             var v1 = visViva(this.center,this.getR(this.trueAnomaly),tA1) - visViva(this.center,this.getR(this.trueAnomaly),this.majorAxis);
             var v2 = visViva(this.center,apoapsis,tA2) - visViva(this.center,apoapsis,tA1);
-            var v3 = visViva(this.center,dest.getR(this.trueAnomaly+pi),tA2) - visViva(this.center,dest.getR(this.trueAnomaly+pi),orbit.majorAxis);
+            var v3 = visViva(this.center,dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi),tA2) - visViva(this.center,dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi),dest.majorAxis);
             orbit.dv = Math.abs(v1)+Math.abs(v2)+Math.abs(v3);
             orbit.dt = (pi * Math.sqrt(((tA1*tA1*tA1)/this.center.grav))) + ((parameters.hohmannApo==1)?0:(pi * Math.sqrt(((tA2*tA2*tA2)/this.center.grav))));
             
+            console.log(v1,v2,v3);
+
             var dir = [this.x-dest.x,this.y-dest.y],
                 distance = Math.sqrt(dir[0]*dir[0] + dir[1]*dir[1]),
                 angle = Math.atan(dir[1]/dir[0]);
             
             orbit.majorAxis = tA1;
             orbit.eccentricity = 1 - (this.getR()/tA1);
-            //orbit.yaw = angle;
+            orbit.yaw = this.trueAnomaly+this.yaw;
             orbit.drawAngle = pi;
             if(parameters.hohmannApo != 1){
                 orbit.majorAxis2 = tA2;
+                orbit.eccentricity2 = 1 - (dest.getR(this.trueAnomaly+this.yaw-dest.yaw)/tA2);
             }else{
                 orbit.majorAxis2 = 0;
                 orbit.eccentricity2 = 0;
@@ -328,10 +341,6 @@ var System = (function(win,doc,undefined){
         orbits[which%2+1].inclination = parameters.BInclination*(pi/180);
         orbits[which%2+1].yaw = parameters.BYaw*(pi/180);
         orbits[which%2+1].anomaly = parameters.BAnomaly*(pi/180);
-
-        // bodies[0].change();
-        // bodies[1].change();
-        // bodies[2].change();
     }
 
     function visViva(center,distance,orbit){

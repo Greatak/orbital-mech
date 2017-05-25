@@ -83,8 +83,8 @@
                 <select>
                     <option value=hohmann>Bi-Elliptic (Hohmann-like)</option>
                     <option value=tangent>Single Tangent Elliptical</option>
-                    <option value=accel>Constant Acceleration</option>
-                    <option value=thrust>Constant Thrust</option>
+                    <option disabled value=accel>Constant Acceleration</option>
+                    <option disabled value=thrust>Constant Thrust</option>
                 </select>
                 <div id=transfer-hohmann class=transfer-option>
                     <p>Bi-Elliptic transfer orbits use a pair of elliptical orbits to transfer between orbits. A Hohmann transfer is a special case where the second ellipse is just the destination orbit. Bi-Elliptic transfers are sometimes lower in deltaV than a Hohmman transfer, but take longer.</p>
@@ -96,17 +96,16 @@
                     </p>
                 </div>
                 <div id=transfer-tangent class=transfer-option>
-                    <p>Single tangent transfer orbits begin like a bi-tangential transfer, but upon entering the destination orbit, change their direction, allowing for reduced travel time and wider launch windows. Specifying any one value below will set the other two.</p>
-                    <p>
-                        <label>Transfer Apoapsis</label>
-                        <input id=tangentApo type=range min=1 max=100 step=0.1 value=1>
-                        <input id=tangentApoVal type=number min=1 max=100 step=0.1 value=1>
+                    <p>Single tangent transfer orbits begin like a bi-tangential transfer, but upon entering the destination orbit, change their direction, allowing for reduced travel time and wider launch windows. Currently forces the assumption of circular orbits even if not set and only apoapsis values work.</p>
+                    <p class='inline'>
+                        <label>Transfer Apoapsis:</label>
+                        <span><input id=tangentApo type=number min=1 value=2>M<sub>Sun</sub></span>
                         <p class=detail>In multiples of the destination orbital distance. 1 is a Hohmann-like transfer.</p>
                     </p>
                     <p>
                         <label>Transfer Angle</label>
-                        <input id=tangentAngle type=range min=0 max=180 step=0.1 value=0>
-                        <span><input id=tangentAngleVal type=number min=0 max=180 step=0.1 value=0>°</span>
+                        <input id=tangentAngle type=range min=90 max=180 step=0.1 value=90>
+                        <span><input id=tangentAngleVal type=number min=90 max=180 step=0.1 value=90>°</span>
                         <p class=detail>Determines the necessary alignment for intercepts. 180° or more becomes bi-tangential.</p>
                     </p>
                     <p>

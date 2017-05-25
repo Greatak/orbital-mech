@@ -31,7 +31,9 @@ var System = (function(win,doc,undefined){
             BAnomaly: 19.37,
             //BAnomaly: 180,
             transferType: 'hohmann',
-            hohmannApo: 2
+            hohmannApo: 2,
+            tangentAngle: 0,
+            tangentApo: 2
         };
 
     var tester = $('<p#test>');
@@ -69,6 +71,7 @@ var System = (function(win,doc,undefined){
     function draw(c){
         c.clearRect(0,0,width,height);
         c.translate(width/2,height/2);
+        //c.scale(orbits[3].minorAxis/orbits[3].majorAxis,1);
         transferDV.textContent = orbits[3].dv.toFixed(2);
         var t = orbits[3].dt;
         transferDT.textContent = Math.floor(t/3.154e+7) + 'y ';
@@ -200,7 +203,6 @@ var System = (function(win,doc,undefined){
             c.save();
             c.rotate(this.yaw);
             c.strokeStyle = '#ff0';
-            c.lineWidth = 3;
             c.beginPath();
             c.ellipse(-this.linearEccentricity*scale,0,this.majorAxis*scale,this.minorAxis*scale,0,
                 0,pi,false);
@@ -212,6 +214,13 @@ var System = (function(win,doc,undefined){
             c.restore();
         }else if(this.transfer == 2){
             //tangential
+            c.save();
+            c.strokeStyle = '#ff0';
+            c.rotate(this.yaw);
+            c.beginPath();
+            c.ellipse(-this.linearEccentricity*scale,0,this.majorAxis*scale,this.minorAxis*scale,0,0,this.drawAngle,false);
+            c.stroke();
+            c.restore();
         }else if(this.transfer == 3){
             //constant acceleration
         }else if(this.transfer == 4){
@@ -232,8 +241,6 @@ var System = (function(win,doc,undefined){
             var v3 = visViva(this.center,dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi),tA2) - visViva(this.center,dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi),dest.majorAxis);
             orbit.dv = Math.abs(v1)+Math.abs(v2)+Math.abs(v3);
             orbit.dt = (pi * Math.sqrt(((tA1*tA1*tA1)/this.center.grav))) + ((parameters.hohmannApo==1)?0:(pi * Math.sqrt(((tA2*tA2*tA2)/this.center.grav))));
-            
-            console.log(v1,v2,v3);
 
             var dir = [this.x-dest.x,this.y-dest.y],
                 distance = Math.sqrt(dir[0]*dir[0] + dir[1]*dir[1]),
@@ -252,7 +259,33 @@ var System = (function(win,doc,undefined){
             }
         }else if(parameters.transferType == 'tangent'){
             orbit.transfer = 2;
-            var angle = pi;
+            if(parameters.tangentAngle == 0){
+                //apo has been set
+                var apoapsis = dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi) * parameters.tangentApo;
+                orbit.majorAxis = (this.getR(this.trueAnomaly)+apoapsis)/2;
+                orbit.eccentricity = 1 - this.getR(this.trueAnomaly)/orbit.majorAxis;
+                orbit.yaw = this.trueAnomaly + this.yaw;
+
+                var anom2 = Math.acos((((orbit.majorAxis*(1-(orbit.eccentricity*orbit.eccentricity)))/dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi))-1)/orbit.eccentricity);
+                var flightAngle = Math.atan((orbit.eccentricity*Math.sin(anom2))/(1+(orbit.eccentricity*Math.cos(anom2))));
+                var va = visViva(this.center,this.getR(),this.majorAxis);
+                var vt1 = visViva(orbit.center,orbit.getR(this.anomaly),orbit.majorAxis)
+                var v1 = Math.abs(vt1 - va);
+                var vt2 = visViva(orbit.center,orbit.getR(anom2),orbit.majorAxis);
+                var vb = visViva(dest.center,dest.getR(anom2),dest.majorAxis);
+                var v2 = Math.abs(Math.sqrt((vt2*vt2)+(vb*vb)-(2*vt2*vb*Math.cos(flightAngle))));
+                var eAnom = Math.acos((orbit.eccentricity+Math.cos(anom2))/(1 + (orbit.eccentricity * Math.cos(anom2))));
+                orbit.drawAngle = eAnom;
+                orbit.dt = (eAnom-(orbit.eccentricity*Math.sin(eAnom)))*Math.sqrt((Math.pow(orbit.majorAxis,3))/this.center.grav);
+                orbit.dv = v1+v2;
+            }else if(parameters.tangentApo == 0){
+                //angle has been set
+
+            }else{
+                //this just needs to update, keep the angle
+            }
+            if(false){
+            var angle = parameters.tangentAngle;
             //angle is specified, change it but defaulting to Hohmann for now
             var r2 = dest.getR(this.anomaly+angle);
             //if one tangent or bielliptic
@@ -271,6 +304,7 @@ var System = (function(win,doc,undefined){
             var eAnom = Math.acos((tEcc+Math.cos(anom2))/(1 + (tEcc * Math.cos(anom2))));
             var time = (eAnom-(tEcc*Math.sin(eAnom)))*Math.sqrt((tA*tA*tA)/this.center.grav);
             return {dv:v1+v2,dt:time};
+            }
         }
     }
     Orbit.prototype.transferTo = orbitTransfer;
@@ -315,6 +349,11 @@ var System = (function(win,doc,undefined){
         else if(e.target.type == 'range'){
             id += 'Val';
             $('#'+id)[0].value = e.target.value;
+        }
+        if(id == 'tangentAngle'){
+            paramters.tangentApo = 0;
+        }else if(id == 'tangentApo'){
+            parameters.tangentAngle = 0;
         }
         parameters[ex] = e.target.value;
         updateParams();

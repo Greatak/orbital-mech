@@ -7,7 +7,14 @@
     <link rel=stylesheet href=main.css>
 </HEAD>
 <BODY>
-    <div class='main-container'></div>
+    <div class='main-container'>
+        <div id=transfer-results>
+            <h1>Transfer Characteristics</h1>
+            <p>DeltaV: <span id=transfer-dv>0</span>m/s</p>
+            <p>Transit Time: <span id=transfer-dt>0</span></p>
+            <p>Synodic Period: <span id=transfer-synodic>N/A</span></p>
+        </div>
+    </div>
     <div class='settings'> 
         <p class=toggle-box>
             <input id=system-settings type=radio name=settings-toggle checked>
@@ -96,10 +103,10 @@
                     </p>
                 </div>
                 <div id=transfer-tangent class=transfer-option>
-                    <p>Single tangent transfer orbits begin like a bi-tangential transfer, but upon entering the destination orbit, change their direction, allowing for reduced travel time and wider launch windows. Currently forces the assumption of circular orbits even if not set and only apoapsis values work.</p>
+                    <p>Single tangent transfer orbits begin like a bi-tangential transfer, but upon entering the destination orbit, change their direction, allowing for reduced travel time and wider launch windows.</p>
                     <p class='inline'>
                         <label>Transfer Apoapsis:</label>
-                        <span><input id=tangentApo type=number min=1 value=2>M<sub>Sun</sub></span>
+                        <span><input id=tangentApo type=number min=1 value=2></span>
                         <p class=detail>In multiples of the destination orbital distance. 1 is a Hohmann-like transfer.</p>
                     </p>
                     <p>
@@ -107,12 +114,6 @@
                         <input id=tangentAngle type=range min=90 max=180 step=0.1 value=90>
                         <span><input id=tangentAngleVal type=number min=90 max=180 step=0.1 value=90>°</span>
                         <p class=detail>Determines the necessary alignment for intercepts. 180° or more becomes bi-tangential.</p>
-                    </p>
-                    <p>
-                        <label>Transfer Time</label>
-                        <input id=tangentTime type=range min=0 max=1 step=0.01 value=0>
-                        <input id=tangentTimeVal type=number min=0 max=1 step=0.01 value=0>
-                        <p class=detail>Fraction of Hohmman-like time. Values less than the minimum time will be increased to the minimum.</p>
                     </p>
                 </div>
                 <div id=transfer-accel class=transfer-option>
@@ -147,12 +148,6 @@
                         <input id=thrustTime type=range min=0 max=100 value=0>
                         <span><input id=thrustTimeVal type=number min=0 max=100 value=0>%</span>
                     </p>
-                </div>
-                <div id=transfer-results>
-                    <h1>Transfer Characteristics</h1>
-                    <p>DeltaV: <span id=transfer-dv>0</span>m/s</p>
-                    <p>Transit Time: <span id=transfer-dt>0</span></p>
-                    <p>Synodic Period: <span id=transfer-synodic>N/A</span></p>
                 </div>
             </form>
         </div>

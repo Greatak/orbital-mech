@@ -30,15 +30,11 @@ var System = (function(win,doc,undefined){
             //BYaw: 0,
             BAnomaly: 19.37,
             //BAnomaly: 180,
-            transferType: 'hohmann',
+            transferType: 'tangent',
             hohmannApo: 2,
             tangentAngle: 0,
             tangentApo: 2
         };
-
-    var tester = $('<p#test>');
-    doc.body.appendChild(tester);
-    tester.textContent = "test";
 
     //basic loop stuff, don't plan on getting too fancy with frameskipping or anything
     var dt = 0,
@@ -54,12 +50,15 @@ var System = (function(win,doc,undefined){
         scale = 0;
         orbits.forEach(function(d){
             d.update(dt); 
-            if(scale < d.majorAxis+d.linearEccentricity) scale = d.majorAxis+d.linearEccentricity; 
+            if(d.transfer <= 1){
+                if(scale < d.majorAxis+d.linearEccentricity) scale = d.majorAxis+d.linearEccentricity; 
+            }
         });
         scale = (height/2-40)/scale;
 
         if(redraw){
             ctx.save();
+            ctx.scale(1,1);
             draw(ctx);
             orbits.forEach(function(d){ d.draw(ctx,scale); });
             ctx.restore();
@@ -71,7 +70,6 @@ var System = (function(win,doc,undefined){
     function draw(c){
         c.clearRect(0,0,width,height);
         c.translate(width/2,height/2);
-        //c.scale(orbits[3].minorAxis/orbits[3].majorAxis,1);
         transferDV.textContent = orbits[3].dv.toFixed(2);
         var t = orbits[3].dt;
         transferDT.textContent = Math.floor(t/3.154e+7) + 'y ';
@@ -191,13 +189,6 @@ var System = (function(win,doc,undefined){
                 this.drawAngleOffset,this.drawAngleOffset+this.drawAngle,false);
             c.stroke();
             c.restore();
-
-            c.save();
-            c.strokeStyle = "#ff0";
-            c.beginPath();
-            c.arc(this.x*scale,this.y*scale,5,0,2*pi,false);
-            c.stroke();
-            c.restore();
         }else if(this.transfer == 1){
             //hohmannlike
             c.save();
@@ -264,9 +255,21 @@ var System = (function(win,doc,undefined){
                 var apoapsis = dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi) * parameters.tangentApo;
                 orbit.majorAxis = (this.getR(this.trueAnomaly)+apoapsis)/2;
                 orbit.eccentricity = 1 - this.getR(this.trueAnomaly)/orbit.majorAxis;
+                orbit.latus = orbit.majorAxis*(1-(orbit.eccentricity*orbit.eccentricity));
                 orbit.yaw = this.trueAnomaly + this.yaw;
 
-                var anom2 = Math.acos((((orbit.majorAxis*(1-(orbit.eccentricity*orbit.eccentricity)))/dest.getR(this.trueAnomaly+this.yaw-dest.yaw+pi))-1)/orbit.eccentricity);
+                //anom2 is inaccurate because  dest.getR isn't right, the angle we need to get the right number is anom2
+                //the same problem happens with the other way around,except we need dest.getR to find anom2
+                var testAngle = this.trueAnomaly+this.yaw-dest.yaw+pi
+                var anom2 = Math.acos((((orbit.majorAxis*(1-(orbit.eccentricity*orbit.eccentricity)))/dest.getR(testAngle))-1)/orbit.eccentricity);
+                var abort = 100;
+
+                while(Math.abs(orbit.getR(anom2)-dest.getR(anom2)) > 100000 && abort != 0){
+                    testAngle = anom2+this.trueAnomaly+this.yaw-dest.yaw;
+                    anom2 = Math.acos((((orbit.majorAxis*(1-(orbit.eccentricity*orbit.eccentricity)))/dest.getR(testAngle))-1)/orbit.eccentricity);
+                    abort -= 1;
+                }
+
                 var flightAngle = Math.atan((orbit.eccentricity*Math.sin(anom2))/(1+(orbit.eccentricity*Math.cos(anom2))));
                 var va = visViva(this.center,this.getR(),this.majorAxis);
                 var vt1 = visViva(orbit.center,orbit.getR(this.anomaly),orbit.majorAxis)
@@ -280,6 +283,8 @@ var System = (function(win,doc,undefined){
                 orbit.dv = v1+v2;
             }else if(parameters.tangentApo == 0){
                 //angle has been set
+                var destAngle = parameters.tangentAngle;
+                var destR = dest.getR(this.trueAnomaly+destAngle);
 
             }else{
                 //this just needs to update, keep the angle
@@ -322,7 +327,7 @@ var System = (function(win,doc,undefined){
         new Orbit({center:orbits[0]});
 
         updateParams();
-        handleTransferChange({target:{value:'hohmann'}});
+        handleTransferChange({target:{value:'tangent'}});
 
         requestAnimationFrame(loop);
     }
@@ -420,7 +425,7 @@ var System = (function(win,doc,undefined){
         return Math.atan2(s,c);
     }
 
-    return orbits;
+    return loop;
 })(window,document);
 
 function $(what){

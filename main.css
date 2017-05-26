@@ -14,17 +14,11 @@ p {
     margin: 0 0.5em;
 }
 
-#test {
-    margin: 0;
-    position: absolute;
-    top: 0;
-}
-
 .main-container {
     display: inline-block;
     position: relative;
 }
-.transfer-info {
+#transfer-results {
     bottom: 0;
     margin: 1em;
     position: absolute;
